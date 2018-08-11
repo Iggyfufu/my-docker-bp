@@ -1,0 +1,64 @@
+version: '3'
+services:
+  ui:
+    build:
+      context: ./ui
+      dockerfile: dev.Dockerfile
+    ports:
+      - 3000:3000
+    volumes:
+      - ./ui/public:/app/public:delegated
+      - ./ui/src:/app/src:delegated
+    networks:
+      - public
+    environment:
+      TEST_VAR: 3333
+    logging:
+      options:
+        max-size: 10m
+  
+  # No need for build here because we are pulling someone else's image (https://hub.docker.com/)
+  # and appling our declared varaibles.
+  mongodb:
+    image: mongo:latest
+    container_name: "mongodb"
+    environment:
+      - MONGO_DATA_DIR=/data/db
+      - MONGO_LOG_DIR=/dev/null
+    volumes:
+      - ./data/db:/data/db
+    ports:
+        - 27017:27017
+    command: mongod --smallfiles --logpath=/dev/null # --quiet
+
+  api:
+    build:
+      context: ./api
+      dockerfile: dev.Dockerfile
+    command: npm run dev
+    ports:
+      - 3001:3001
+    volumes:
+      - ./api/dist:/app/dist
+      - ./api/package.json:/app/package.json:delegated
+      - ./api/package-lock.json:/app/package-lock.json:delegated 
+    networks:
+      - public
+
+  api-watch:
+    build: 
+      context: ./api
+      dockerfile: dev.Dockerfile
+    command: npm run watch
+    volumes:
+      - ./api/src:/app/src:delegated
+      - ./api/dist:/app/dist:delegated
+    
+networks:
+  public:
+      driver: bridge
+      internal: false
+
+
+
+
